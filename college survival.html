@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNIV 101: College Unlocked</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1b2a5a;--panel:#fff8e1;--ink:#20243a;--gold:#f5c518;--fg:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1733;--panel:#262b45;--ink:#f1f1f8}}
+:root[data-theme="dark"]{--bg:#0f1733;--panel:#262b45;--ink:#f1f1f8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:"Press Start 2P",monospace}
+#app{max-width:640px;margin:0 auto;padding:8px;user-select:none;-webkit-user-select:none}
+h1{font-size:12px;margin:4px 0 8px;color:var(--gold);text-align:center;line-height:1.5}
+#hud{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:8px;margin-bottom:6px;line-height:1.6}
+#hud b{display:inline-block;width:44px;height:8px;background:#0007;border:1px solid #fff;vertical-align:middle;margin-left:4px}
+#hud i{display:block;height:100%}
+canvas{width:100%;display:block;border:4px solid var(--gold);image-rendering:pixelated;background:#000;box-sizing:border-box}
+#box{background:var(--panel);color:var(--ink);border:4px solid var(--gold);padding:10px;margin-top:6px;min-height:110px;box-sizing:border-box}
+#who{font-size:9px;color:#b23a48;margin-bottom:8px;line-height:1.5}
+#txt{font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;margin-bottom:8px}
+#btns{display:flex;flex-direction:column;gap:6px}
+#btns button{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;text-align:left;padding:8px 10px;background:#fff;color:#20243a;border:3px solid #20243a;cursor:pointer}
+#btns button:hover,#btns button:focus-visible{background:var(--gold);outline:none}
+#pad{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+#pad button{width:48px;height:48px;font:14px "Press Start 2P",monospace;background:var(--gold);color:#20243a;border:3px solid #20243a;touch-action:none}
+#dp{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:2px}
+#dp .u{grid-area:1/2}#dp .l{grid-area:2/1}#dp .r{grid-area:2/3}#dp .d{grid-area:3/2}
+#pad .a{width:84px;height:84px;border-radius:50%}
+</style></head><body><div id="app">
+<h1>UNIV 101: COLLEGE UNLOCKED</h1>
+<div id="hud"></div>
+<canvas id="c" width="320" height="224"></canvas>
+<div id="box"><div id="who"></div><div id="txt"></div><div id="btns"></div></div>
+<div id="pad"><div id="dp"><button class="u" data-k="arrowup">▲</button><button class="l" data-k="arrowleft">◀</button><button class="r" data-k="arrowright">▶</button><button class="d" data-k="arrowdown">▼</button></div><button class="a" id="A">A</button></div>
+</div>
+<script>
+const $=i=>document.getElementById(i),cv=$("c"),c=cv.getContext("2d");c.imageSmoothingEnabled=false;
+const cl=v=>Math.max(0,Math.min(100,v)),K={};
+const LV=[
+{n:"Move-In Mayhem",intro:"Everything is new and nobody gave you a manual. Find the Peer Leader, then deal with the Lonely Ghost.",
+ npc:{n:"Sam (Peer Leader)",p:[4,5],c:"#43a047",pw:"Campus Map",use:"Use it in week 1 so you’re never lost or late. Walk your class routes before the first day.",
+  l:["Hey, first-year! I’m Sam, a peer leader. I was lost on day one too.","Take this Campus Map. Walk your routes before class so you know where everything is."],again:"You’ve got this! Come find me any time you have a question."},
+ ob:{n:"Lonely Ghost",p:[15,5],q:"It’s Friday night. Your hallway is quiet and you feel disconnected. What do you do?",
+  o:[["Knock on a neighbor’s door and invite people to grab dinner",{e:-5,s:15},"Great move! Small invitations build friendships fast."],["Go to an event you saw on a flyer",{e:-8,s:10},"Nice. Events are the easiest way to meet people."],["Stay in your room and scroll",{e:0,s:-10},"The ghost grows stronger. Isolation makes everything harder."]]},
+ sq:{n:"Side Quest: Club Fair",p:[10,12],t:"You visit the club fair and sign up for two clubs that look fun.",f:{s:10,e:-5}}},
+{n:"Time Management Temple",intro:"Classes are in full swing. Syllabi, deadlines, and a very sneaky gremlin. Find your advisor!",
+ npc:{n:"Ms. Rivera (Advisor)",p:[16,5],c:"#8e24aa",pw:"Planner",use:"Use it every Sunday: write down every deadline and break big work into small chunks.",
+  l:["Welcome! I’m your academic advisor. My job is to help you plan your path.","Here’s a Planner. Put every deadline from every syllabus in it today."],again:"Check in with me before you register for classes. I’m here to help!"},
+ ob:{n:"Procrastination Gremlin",p:[5,8],q:"You have two assignments and an exam this week, and you haven’t started anything. What do you do?",
+  o:[["Make a weekly plan and split the work into chunks",{g:12,e:-5},"The gremlin shrinks! Planning ahead beats panic."],["Pull an all-nighter the night before",{g:3,e:-25},"You survive, but you’re wiped out. All-nighters backfire."],["Do the easiest thing and hope for the best",{g:-5,e:-5},"Hoping isn’t a plan. The hard stuff is still waiting."]]},
+ sq:{n:"Side Quest: Meet a Professor",p:[9,2],t:"You stop by a professor’s office just to say hello and ask about their research.",f:{g:5,s:8}}},
+{n:"Study Cave",intro:"Your first big quiz is coming and one class is really hard. Find Professor Okafor!",
+ npc:{n:"Prof. Okafor",p:[8,2],c:"#795548",pw:"Office Hours Pass",use:"Use it as soon as you feel confused, not the night before the exam.",
+  l:["Come in! Students who visit office hours do better. It’s not just for people who are failing.","Here’s your Office Hours Pass. Bring one question and I’ll help."],again:"My door is open during office hours. Please stop by!"},
+ ob:{n:"Hard Class Golem",p:[16,7],q:"You bombed a quiz in a tough class and you don’t understand the material. What do you do?",
+  o:[["Go to office hours with specific questions",{g:15,s:8,e:-5},"The golem crumbles! Professors want to help."],["Wait and hope it gets better",{g:-10,e:0},"It rarely does. Confusion piles up."],["Only ask friends who are also confused",{g:2,s:3},"Friends help, but you still need the expert."]]},
+ sq:{n:"Side Quest: Study Group",p:[3,12],t:"You form a study group with three classmates. You quiz each other and share notes.",f:{g:8,s:10,e:-5}}},
+{n:"Community Quad",intro:"You’ve been here a while. Time to build your network and handle a missed deadline. Find the tutor!",
+ npc:{n:"Jess (Learning Commons)",p:[10,12],c:"#00acc1",pw:"Study Group Badge",use:"Use it for tough exams: tutors and peers explain things in new ways.",
+  l:["Hi! I’m Jess, a tutor at the Learning Commons. Free help with writing, math, and more!","Here’s a Study Group Badge. Studying with others makes hard stuff stick."],again:"Drop in anytime. No question is too small!"},
+ ob:{n:"Missing Assignment Monster",p:[4,5],q:"You totally forgot an assignment and it was due yesterday. What do you do?",
+  o:[["Email your professor right away, own it, and ask what to do",{g:6,s:5,e:-3},"Honesty works. Professors respect students who speak up."],["Say nothing and hope they don’t notice",{g:-12,e:-5},"They noticed. Silence makes it worse."],["Vent to a friend but don’t contact anyone",{g:-4,s:3},"Venting feels good, but the professor can only help if you ask."]]},
+ sq:{n:"Side Quest: Career Event",p:[17,5],t:"You attend a career and networking event and chat with an alum about their job.",f:{s:8,e:-5}}},
+{n:"Finals Prep Peak",intro:"Finals are close and everything is piling up. Find your friend Jordan before the Overwhelm Cloud swallows you.",
+ npc:{n:"Jordan (Friend)",p:[3,7],c:"#f06292",pw:"Self-Care Kit",use:"Use it when your energy is low: sleep, food, and a walk are part of studying.",
+  l:["Hey! You look tired. Same here.","Take this Self-Care Kit. Sleep, real food, and breaks make you smarter."],again:"Text me if you need a study break. Or a snack."},
+ ob:{n:"Overwhelm Cloud",p:[16,8],q:"Finals are close, you’re behind, and you feel burned out. What do you do?",
+  o:[["Talk to your advisor or a friend, then make a priority list",{e:15,g:8,s:8},"The cloud lifts. Support plus a plan beats stress."],["Skip meals and sleep to cram",{e:-30,g:-3},"You crash. Burnout makes you learn less."],["Take a short break, then make a to-do list",{e:10,g:5},"Good call. Rested brains work better."]]},
+ sq:{n:"Side Quest: Connect Outside Your Major",p:[8,12],t:"You meet a student from a totally different major and trade study tips and stories.",f:{s:10,e:-3}}}];
+const AMB=[{x:1,y:6,n:"Classmate",c:"#e57373",t:["Tip: read the syllabus on day one. Every due date is in there!","Tip: sit near the front. You’ll focus more and professors learn your name."]},
+{x:12,y:8,n:"Upperclassman",c:"#ffb300",t:["Everybody feels lost in September. You’re not behind!","Go to office hours even if you don’t have a question. Seriously."]},
+{x:18,y:12,n:"RA",c:"#5c6bc0",t:["Sleep matters more than you think. All-nighters backfire.","Check your school email every day. Important stuff shows up there."]}];
+const BOSSHIT=["The dragon breathes a cloud of deadlines!","The dragon roars “ALL-NIGHTER!” and you stagger.","The dragon swipes with a pile of unread email."];
+const S={};
+function reset(){Object.assign(S,{e:70,g:50,s:20,lv:0,cr:0,pw:[],nd:0,od:0,sd:0,bh:100,px:152,py:120,mode:"title",t:0});AMB.forEach(m=>m.i=0)}
+reset();
+const fx=f=>{S.e=cl(S.e+(f.e||0));S.g=cl(S.g+(f.g||0));S.s=cl(S.s+(f.s||0));hud()};
+const dstr=f=>["e","g","s"].filter(k=>f[k]).map(k=>({e:"Energy",g:"Grades",s:"Support"}[k])+" "+(f[k]>0?"+":"")+f[k]).join(", ");
+function hud(){const b=(l,v,col)=>`<span>${l}<b><i style="width:${v}%;background:${col}"></i></b></span>`;
+ $("hud").innerHTML=b("Energy",S.e,"#66bb6a")+b("Grades",S.g,"#42a5f5")+b("Support",S.s,"#f48fb1")+`<span>Credits ${S.cr}</span><span style="flex-basis:100%">Power-ups: ${S.pw.join(", ")||"none yet"}</span>`}
+function box(w,t,b){$("who").textContent=w;$("txt").textContent=t;const B=$("btns");B.innerHTML="";(b||[]).forEach(([l,f],i)=>{const e=document.createElement("button");e.textContent=(b.length>1?(i+1)+". ":"")+l;e.onclick=f;B.appendChild(e)})}
+function say(w,L,cb){cb=cb||walk;let i=0;const n=()=>{if(i>=L.length){cb();return}const last=i===L.length-1;box(w,L[i++],[[last?"OK":"Next ▶",n]])};n()}
+function walk(){S.mode="walk";const L=LV[S.lv];hud();
+ if(L)box("LEVEL "+(S.lv+1)+": "+L.n,`Goal: talk to ${L.npc.n} ${S.nd?"[done]":"(!)"} and beat the ${L.ob.n} ${S.od?"[done]":""}. Optional: ${L.sq.n} ${S.sd?"[done]":"(star)"}. Walk up to someone and press A or Space.`);
+ else box("FINALS WEEK","Walk to the Finals Week Dragon in the middle of campus and face it!")}
+function startLevel(){const L=LV[S.lv];say("LEVEL "+(S.lv+1)+": "+L.n,[L.intro])}
+function start(){S.mode="talk";say("WELCOME TO PACE!",["You start with 0 credits, a new campus, and no instruction manual.","Mission: survive your first semester, collect power-ups, build your support network, and defeat the final boss!","Move with arrow keys, WASD, or the on-screen pad. Press A or Space to talk and interact."],startLevel)}
+function chk(){if(S.nd&&S.od){S.cr+=3;hud();if(S.lv<4){S.lv++;S.nd=S.od=S.sd=0;say("LEVEL CLEAR!",["Level "+S.lv+" complete! +3 credits."],startLevel)}else{S.lv=5;say("LEVEL CLEAR!","Final level complete! Finals Week has arrived, and the Burnout Dragon is waiting in the middle of campus!".split("|"))}}else walk()}
+function talk(){const n=LV[S.lv].npc;S.mode="talk";if(S.nd)say(n.n,[n.again]);else say(n.n,n.l,()=>{S.nd=1;S.pw.push(n.pw);hud();say("NEW POWER-UP: "+n.pw,[n.use],chk)})}
+function fight(){const o=LV[S.lv].ob;S.mode="talk";const opts=o.o.slice().sort(()=>Math.random()-.5);
+ box(o.n+" appears!",o.q,opts.map(([t,f,r])=>[t,()=>{fx(f);say("Result",[r+" ("+dstr(f)+")"],()=>{S.od=1;chk()})}]))}
+function quest(){const q=LV[S.lv].sq;S.mode="talk";if(S.sd)say(q.n,["You already finished this side quest."]);else say(q.n,[q.t],()=>{fx(q.f);S.sd=1;say("SIDE QUEST DONE!",["Bonus: "+dstr(q.f)])})}
+function boss(){S.mode="battle";say("FINALS WEEK DRAGON",["ROAR! I am Burnout. I feed on all-nighters, skipped meals, and students who never ask for help!","Use your power-ups wisely and watch your energy!"],turn)}
+function turn(){hud();const has=p=>S.pw.includes(p),M=[["Study (-8 energy)",()=>mv(12+Math.floor(S.s/10),-8,"You hit the books.")]];
+ if(has("Planner"))M.push(["Planner: Plan Attack",()=>mv(20,-5,"You follow your plan step by step.")]);
+ if(has("Office Hours Pass"))M.push(["Office Hours: Ask for Help",()=>mv(22,-10,"A professor clears up your hardest topic.")]);
+ if(has("Study Group Badge"))M.push(["Study Group: Team Up",()=>mv(22,-8,"Your study group has your back.")]);
+ if(has("Self-Care Kit"))M.push(["Self-Care: Rest and Recharge",()=>mv(0,25,"You sleep, eat, and take a walk.")]);
+ box("Dragon HP "+S.bh+"/100  |  Your Energy "+S.e,"Choose your move:",M)}
+function mv(d,e,m){S.bh=Math.max(0,S.bh-d);S.e=cl(S.e+e);hud();
+ if(S.bh<=0){win();return}say("YOU",[m+(d?" The dragon takes "+d+" damage!":" You feel recharged!")],dragon)}
+function dragon(){S.e=cl(S.e-10);hud();
+ if(S.e<=0)say("DRAGON",["You’re out of energy! But you rest, ask a friend for help, and get back up. Energy restored to 50."],()=>{S.e=50;turn()});
+ else say("DRAGON",[BOSSHIT[Math.floor(Math.random()*3)]+" You lose 10 energy."],turn)}
+function win(){S.mode="end";say("VICTORY!",["The Burnout Dragon is defeated! You made it through your first semester.",
+ "Accomplishments: (1) You passed your classes. (2) You built a support network. (3) You got involved on campus.",
+ "Skill you developed: time management, and asking for help early.",
+ "Lesson for sophomore year: asking for help is a strength, not a weakness.",
+ "Keep building relationships with: your advisor, your professors, your peer leader, and your study group."],
+ ()=>box("YOU UNLOCKED COLLEGE!",`Credits earned: ${S.cr}. Energy ${S.e}, Grades ${S.g}, Support ${S.s}. Power-ups: ${S.pw.join(", ")}.`,[["Play again",()=>{reset();hud();title()}]]))}
+function title(){S.mode="title";box("UNIV 101: COLLEGE UNLOCKED","A first-year survival game. Five levels, hidden power-ups, a support network, and one final boss.",[["START GAME",start]])}
+function ents(){const a=[],L=LV[S.lv];
+ if(L){a.push({k:"npc",x:L.npc.p[0],y:L.npc.p[1],c:L.npc.c,m:!S.nd,go:talk});
+  if(!S.od)a.push({k:"ob",x:L.ob.p[0],y:L.ob.p[1],go:fight});
+  if(!S.sd)a.push({k:"sq",x:L.sq.p[0],y:L.sq.p[1],go:quest})}
+ else a.push({k:"boss",x:9,y:6,go:boss});
+ AMB.forEach(m=>a.push({k:"amb",x:m.x,y:m.y,c:m.c,go:()=>{S.mode="talk";say(m.n,[m.t[m.i++%m.t.length]])}}));return a}
+const ex=e=>e.x*16+8,ey=e=>e.y*16+8;
+function near(){let b=null,d=28;ents().forEach(e=>{const q=Math.hypot(ex(e)-S.px,ey(e)-S.py);if(q<d){d=q;b=e}});return b}
+function act(){if(S.mode!=="walk")return;const e=near();if(e)e.go()}
+const SOL=[[1,1,5,3],[14,1,5,3],[1,9,5,3],[14,9,5,3],[7,4,1,1],[12,4,1,1],[7,10,1,1],[12,10,1,1]].map(a=>a.map(v=>v*16));
+const blk=(x,y)=>SOL.some(([a,b,w,h])=>x-5<a+w&&x+5>a&&y+1<b+h&&y+7>b);
+function upd(){if(S.mode!=="walk")return;
+ let dx=(K.arrowright||K.d?1:0)-(K.arrowleft||K.a?1:0),dy=(K.arrowdown||K.s?1:0)-(K.arrowup||K.w?1:0);if(dx&&dy){dx*=.7;dy*=.7}
+ const nx=Math.max(6,Math.min(314,S.px+dx*1.6));if(!blk(nx,S.py))S.px=nx;
+ const ny=Math.max(13,Math.min(216,S.py+dy*1.6));if(!blk(S.px,ny))S.py=ny}
+const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h)};
+function tx(s,x,y,col,sz,al){c.font=(sz||8)+'px "Press Start 2P",monospace';c.fillStyle=col;c.textAlign=al||"center";c.fillText(s,x,y)}
+function person(x,y,col,hair){R(x-5,y+7,10,2,"rgba(0,0,0,.25)");R(x-4,y+3,3,4,"#333");R(x+1,y+3,3,4,"#333");R(x-5,y-5,10,8,col);R(x-4,y-12,8,7,"#f1c27d");R(x-4,y-13,8,3,hair||"#4e342e");R(x-2,y-9,1,1,"#222");R(x+1,y-9,1,1,"#222")}
+function blob(x,y){const b=Math.sin(S.t/8)*2;R(x-8,y+7,16,2,"rgba(0,0,0,.25)");R(x-8,y-6+b,16,14,"#7b1fa2");R(x-6,y-9+b,12,4,"#7b1fa2");R(x-5,y-4+b,4,4,"#fff");R(x+1,y-4+b,4,4,"#fff");R(x-4,y-3+b,2,2,"#000");R(x+2,y-3+b,2,2,"#000");R(x-6,y-6+b,5,1,"#000");R(x+1,y-6+b,5,1,"#000");R(x-8,y+8,4,2,"#4a148c");R(x+4,y+8,4,2,"#4a148c")}
+function star(x,y){const p=Math.sin(S.t/6)*2;R(x-2,y-6-p,4,12+2*p,"#ffd600");R(x-6-p,y-2,12+2*p,4,"#ffd600");R(x-2,y-2,4,4,"#fff")}
+function drag(x,y,s){c.save();c.translate(x,y);c.scale(s,s);R(-36,-20,16,24,"#8b1e1e");R(20,-20,16,24,"#8b1e1e");R(-20,-10,40,30,"#d32f2f");R(-12,2,24,16,"#ffb74d");R(-14,-28,28,22,"#e53935");R(-14,-34,6,8,"#fff");R(8,-34,6,8,"#fff");R(-9,-22,6,5,"#ffeb3b");R(3,-22,6,5,"#ffeb3b");R(-7,-21,2,3,"#000");R(5,-21,2,3,"#000");R(-8,-11,16,3,"#222");R(-20,20,10,6,"#8b1e1e");R(10,20,10,6,"#8b1e1e");c.restore()}
+function bld(a,b,w,h,roof,wall,lab){const x=a*16,y=b*16,W=w*16,H=h*16;R(x,y,W,H,wall);R(x,y,W,14,roof);R(x,y+14,W,2,"rgba(0,0,0,.25)");
+ for(let i=0;i<w-1;i++){R(x+10+i*16,y+22,8,8,"#bfe3ff");}R(x+W/2-6,y+H-16,12,16,"#6d4c41");tx(lab,x+W/2,y+11,"#fff",6)}
+function mapDraw(){for(let i=0;i<20;i++)for(let j=0;j<14;j++)R(i*16,j*16,16,16,(i+j)%2?"#62b862":"#6bc16b");
+ for(let i=0;i<20;i++){R(i*16,96,16,32,"#e6d5a1");}for(let j=0;j<14;j++)R(144,j*16,32,16,"#e6d5a1");
+ bld(1,1,5,3,"#b23a48","#e8cfa8","LIBRARY");bld(14,1,5,3,"#3a6ea5","#d9d9e8","ADVISING");bld(1,9,5,3,"#7a4ea3","#e8cfa8","DORM");bld(14,9,5,3,"#2e8b57","#d9e8d9","COMMONS");
+ [[7,4],[12,4],[7,10],[12,10]].forEach(([a,b])=>{R(a*16+6,b*16+9,4,7,"#6d4c41");R(a*16+1,b*16+1,14,10,"#2e7d32");R(a*16+3,b*16-2,10,6,"#388e3c")})}
+function draw(){S.t++;upd();c.clearRect(0,0,320,224);
+ if(S.mode==="battle"||(S.mode==="end"&&S.bh<=0)){R(0,0,320,224,S.mode==="end"?"#ffd54f":"#2a1b3d");
+  for(let i=0;i<20;i++)R(i*16,176,16,48,i%2?"#3b2a52":"#33244a");
+  if(S.mode==="battle"){drag(160,86+Math.sin(S.t/12)*3,2);R(60,10,200,10,"#000");R(62,12,196*S.bh/100,6,"#e53935");tx("DRAGON HP",160,36,"#fff",7)}
+  else{tx("VICTORY!",160,60,"#b71c1c",16);person(160,150,"#f5c518","#4e342e")}
+  if(S.mode==="battle")person(160,186,"#f5c518","#4e342e");requestAnimationFrame(draw);return}
+ mapDraw();const L=ents();L.push({k:"me",x:(S.px-8)/16,y:(S.py-8)/16});
+ L.sort((a,b)=>a.y-b.y).forEach(e=>{const x=ex(e),y=ey(e);
+  if(e.k==="me")person(x,y,"#f5c518","#4e342e");else if(e.k==="npc"||e.k==="amb")person(x,y,e.c,e.k==="npc"?"#212121":"#6d4c41");
+  else if(e.k==="ob")blob(x,y);else if(e.k==="sq")star(x,y);else if(e.k==="boss")drag(x,y-4,.5);
+  if(e.m)tx("!",x,y-17+Math.sin(S.t/6)*2,"#ffd600",10)});
+ if(S.mode==="walk"){const n=near();if(n){const x=ex(n),y=ey(n)-24;R(x-7,y-8,14,12,"#fff");R(x-7,y-8,14,1,"#000");tx("A",x,y+2,"#000",8)}}
+ if(S.mode==="title"){R(0,60,320,90,"rgba(27,42,90,.85)");tx("UNIV 101",160,95,"#f5c518",18);tx("COLLEGE UNLOCKED",160,122,"#fff",10);tx("A first-year survival game",160,140,"#bbb",7)}
+ requestAnimationFrame(draw)}
+addEventListener("keydown",e=>{const k=e.key.toLowerCase();K[k]=1;
+ if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k)&&S.mode==="walk")e.preventDefault();
+ const b=$("btns").children;
+ if(S.mode==="walk"){if([" ","enter","z"].includes(k)){e.preventDefault();act()}}
+ else if(b.length===1&&[" ","enter","z"].includes(k)){e.preventDefault();b[0].click()}
+ else if(b.length>1&&"1234567".includes(k)&&b[+k-1]){b[+k-1].click()}});
+addEventListener("keyup",e=>{K[e.key.toLowerCase()]=0});
+document.querySelectorAll("#dp button").forEach(b=>{const k=b.dataset.k;b.addEventListener("pointerdown",e=>{e.preventDefault();K[k]=1});["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,()=>K[k]=0))});
+$("A").addEventListener("pointerdown",e=>{e.preventDefault();act()});
+hud();title();draw();
+</script></body></html>
